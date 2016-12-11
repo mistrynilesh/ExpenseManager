@@ -11,10 +11,19 @@
 <link rel="import" href="../bower_components/vaadin-combo-box/vaadin-combo-box.html">
 <link rel="import" href="../bower_components/vaadin-upload/vaadin-upload.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/polymerfire/polymerfire.html">
 <link rel="import" href="../bower_components/app-route/app-route.html">
 
 <dom-module id="expense-editor">
   <template>
+
+    <firebase-document
+        id="document"
+        app-name="ExpenseManager"
+        path="[[editableId]]"
+        data="{{expense}}">
+    </firebase-document>
+
     <style>
       #dialog {
         display: block;
@@ -179,8 +188,8 @@
           <form is="iron-form" id="form">
             <iron-a11y-keys keys="enter" on-keys-pressed="_save"></iron-a11y-keys>
             <vaadin-combo-box name="merchant" id="merchant" items="[[merchants]]" value="{{expense.merchant}}" label="Merchant" allow-custom-value required></vaadin-combo-box>
-            <paper-input name="total" id="total" value="{{expense.total}}" type="number" max="10000" label="Total" required step="any">
-              <div prefix>$</div>
+            <paper-input name="amount" id="amount" value="{{expense.amount}}" type="number" max="10000" label="Amount" required step="any">
+              <div prefix>₹</div>
             </paper-input>
 
             <vaadin-date-picker label="Date" value="{{expense.date}}" id="date" name="date" required></vaadin-date-picker>
@@ -372,6 +381,8 @@
           var form = this.$.form;
           if (form.validate()) {
             this.expense.total = parseFloat(this.expense.total);
+            //this.set('data', this.expense);
+            this.push('data', this.expense);
             this.fire('expense-saved', this.expense);
           } else {
             console.log('Form validation failed');

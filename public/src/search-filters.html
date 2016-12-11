@@ -114,7 +114,7 @@
         <div class="row">
           <div class="total col">
             <paper-input label="Min" value="{{filters.min}}" type="number" required step="any">
-              <div prefix>$</div>
+              <div prefix>₹</div>
             </paper-input>
             <span>–</span>
             <paper-input label="Max" value="{{filters.max}}" type="number" required step="any"></paper-input>
@@ -123,11 +123,11 @@
 
         <div class="row">
           <div class="merchants col">
-            <vaadin-combo-box label="Merchant" items="{{merchants}}" value="{{filters.merchant}}" id="merchantsSelect"></vaadin-combo-box>
+            <vaadin-combo-box label="Type" items="{{merchants}}" value="{{filters.merchant}}" id="merchantsSelect"></vaadin-combo-box>
           </div>
         </div>
 
-        <div class="row">
+       <!--  <div class="row">
           <div class="status col">
             <span class="caption">Status</span>
             <div class="checkboxes">
@@ -136,7 +136,7 @@
               </template>
             </div>
           </div>
-        </div>
+        </div> -->
 
       </div>
     </div>
@@ -166,7 +166,7 @@
 
         ready: function() {
           this._registerValidators();
-
+          this.merchants = ['official', 'traveling', 'demo'];
           // Select all status options by default.
           this.statusOptions.forEach(function(status) {
             this._addStatus(status.name);

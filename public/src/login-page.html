@@ -80,13 +80,11 @@
   </style>
 
   <template>
-     <firebase-auth
-        id="auth"
-        app-name="notes"
+    <firebase-auth
+        id="authExpenseManager"
+        app-name="ExpenseManager"
         provider=""       
-        user="{{user}}" 
-        on-error="errorHandler" 
-        on-login="onSuccess" >
+        user="{{user}}" >
     </firebase-auth>
 
     <iron-a11y-keys keys="enter" on-keys-pressed="_logIn"></iron-a11y-keys>
@@ -98,6 +96,7 @@
       <paper-input value="{{password::input}}" label="Password" name="password" type="password"></paper-input>
       <span class="error-message">[[errorMessage]]</span>
       <paper-button id="login-button" on-tap="_logIn" raised>Login</paper-button>
+      <paper-toast id="loginError" text="Invalid username or password."></paper-toast>
     </div>
     <div id="footer">
       <span class="fork-me">
@@ -127,12 +126,12 @@
 
           email: {
             type: String,
-            value: ''
+            value: 'nilesh@mobiuso.com'
           },
 
           password: {
             type: String,
-            value: ''
+            value: '123456'
           },
 
           user: {
@@ -142,23 +141,18 @@
 
           statusKnown: {
             type: Boolean
-          },
-
-          errorMessage: String
+          }
         },
 
         _logIn: function() {        
-         
-          // var params = {
-          //   email : 'mistrynilesh440@gmail.com',
-          //   password : '123456'
-          // };
-          this.loggedIn = true;
-//          this.$.auth.signInWithEmailAndPassword('nilesh@mobiuso.com','123456').then(function() {
-//
-//          }, function(error) {
-//              this.loggedIn = false;
-//          });
+          var that = this;
+          this.$.authExpenseManager.signInWithEmailAndPassword(this.email,this.password).then(function() {
+              that.loggedIn = true;
+          }, function(error) {
+              that.loggedIn = false;   
+              loginError.verticalAlign = "top";           
+              loginError.open();
+          });
         },
 
       });
