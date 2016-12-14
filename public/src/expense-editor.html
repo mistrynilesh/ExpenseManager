@@ -13,16 +13,23 @@
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 <link rel="import" href="../bower_components/polymerfire/polymerfire.html">
 <link rel="import" href="../bower_components/app-route/app-route.html">
+<!-- <link rel="import" href="../bower_components/firebase-element/firebase-collection.html">
+<link rel="import" href="../bower_components/firebase-element/firebase-document.html"> -->
 
 <dom-module id="expense-editor">
   <template>
 
     <firebase-document
-        id="document"
+        id="expenseDocument"
         app-name="ExpenseManager"
-        path="[[editableId]]"
+        path="/expenses/{{expenseId}}"        
         data="{{expense}}">
     </firebase-document>
+
+    <!-- <firebase-collection id="expenseCollection"
+      location="https://expense-proto.firebaseio.com/expenses"
+      data="{{expense}}" >
+    </firebase-collection> -->
 
     <style>
       #dialog {
@@ -227,11 +234,9 @@
           merchants: Array,
           expense: {
             type: Object,
-            notify: true,
-            value: function() {
-              return {};
-            }
+            notify: true
           },
+          expenseId : '',
           caption: {
             type: String,
             computed: '_getCaption(expense)'
@@ -378,13 +383,22 @@
 
         _save: function() {
           this.$.error.innerText = '';
+          var that = this;
           var form = this.$.form;
           if (form.validate()) {
-            this.expense.total = parseFloat(this.expense.total);
-            //this.set('data', this.expense);
-            this.push('data', this.expense);
-            this.fire('expense-saved', this.expense);
-          } else {
+          this.expense.amount = parseFloat(this.expense.amount); 
+          if(this.expense.hasOwnProperty('$key')){
+              that.expenseId = this.expense.$key; 
+              delete this.expense['$key'];
+              this.$.expenseDocument.save('expenses',  that.expenseId).then(function () {  
+                 that.fire('expense-saved', that.expense);      
+              });
+          }else{
+              this.$.expenseDocument.save('expenses').then(function () {  
+                 that.fire('expense-saved', that.expense);      
+               });
+          }            
+        } else {
             console.log('Form validation failed');
             this.$.dialog.scrollTop = 0;
             this.errorText = 'Please fill all required fields';

@@ -66,34 +66,6 @@
         color: var(--primary-text-color);
       }
 
-      vaadin-grid /deep/ .total {
-        flex-direction: row-reverse;
-      }
-
-      vaadin-grid /deep/ td.status-new {
-        color: var(--accent-color);
-        font-weight: 500;
-      }
-
-      vaadin-grid /deep/ td.status-in_progress {
-        font-weight: 500;
-        font-style: italic;
-        text-transform: capitalize;
-      }
-
-      vaadin-grid /deep/ td.comment {
-        position: relative;
-      }
-
-      vaadin-grid /deep/ td.comment span {
-        width: 100%;
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        padding-right: 35px;
-        box-sizing: border-box;
-      }
-
       #expenses /deep/ .vaadin-grid-header [class*="sort-"]:after {
         content: "";
         border-width: 5px;
@@ -144,9 +116,15 @@
   <firebase-query
         id="query"
         app-name="ExpenseManager"
-        path="/expenses"
-        data="{{data}}">
+        path="/expenses/{{expenseId}}" >
   </firebase-query>
+
+  <firebase-query
+        id="expenseQuery"
+        app-name="ExpenseManager"
+        path="/expenses"
+        data="{{expenselist}}">
+  </firebase-query> 
 
  <!--  <app-indexeddb-mirror
         session="[[user.uid]]"
@@ -155,7 +133,7 @@
         persisted-data="{{persistedData}}">
    </app-indexeddb-mirror> -->
 
-  <template is="dom-repeat" items="{{data}}" as="expense"   >        
+  <template is="dom-repeat" items="[[expenselist]]" as="expense" >        
    <paper-card>
       <div class="rate-content">
         <div class="card-content">
@@ -164,8 +142,8 @@
           <div>Date : [[expense.date]]</div>
         </div>
         <div class="card-actions"> 
-          <iron-icon icon="icons:delete" style="float: right;color:#F44336" ></iron-icon>   
-          <iron-icon icon="editor:mode-edit" style="float: right;color:#2196F3"  ></iron-icon>      
+          <iron-icon icon="icons:delete" on-tap="_deleteExpense" style="cursor:pointer;float: right;color:#F44336" ></iron-icon>   
+          <iron-icon icon="editor:mode-edit" on-tap="_showExpenseEditor" style="cursor:pointer;float: right;color:#2196F3" ></iron-icon>      
         </div>
       </div>
       <div class="rate-image"></div>
@@ -174,6 +152,12 @@
   
  </div>
     <paper-fab icon="add" on-tap="_showExpenseEditor" id="add-button"></paper-fab>
+    <paper-toast id="expenseDeleteError" text="Are you sure want to delete this expense ?" >
+       <paper-button class="red-button" on-tap="_yesDeleteExpense" >Yes</paper-button>
+       <paper-button onclick="expenseDeleteError.toggle()" class="yellow-button">No</paper-button>
+    </paper-toast>
+     <paper-toast id="deletedMessage" text="Expense was deleted."></paper-toast>
+    </div>
   </template>
   <script>
 
@@ -183,185 +167,56 @@
 
         properties: {          
           filters: Object,
-          data: {
+          expenselist: {
             type: Array,
             observer: '_dataChanged',
             notify: true
-          }
-        },
+          },
+          deleteExpense: {
+            type: Object,
+          //  observer: '_dataChanged',
+           // notify: true
+          },
+          expenseId : ''
+        },   
 
         observers: [        
           '_filtersChanged(filters.*)'        
         ],
 
-       ready: function() {
+      _showExpenseEditor: function(event) {
+        if(event.currentTarget.icon === 'editor:mode-edit'){
+           this.fire('edit-expense', event.model.__data__.expense);
+        }else{
+           this.fire('edit-expense', {});
+        }       
        },
 
-      _showExpenseEditor: function() {
-          this.fire('edit-expense', {});
-        },
+       _deleteExpense: function(event) { 
+           this.deleteExpense = event.model.__data__.expense;          
+           this.expenseId = this.deleteExpense.$key;               
+           expenseDeleteError.verticalAlign = "top";  
+           expenseDeleteError.duration = 15000;          
+           expenseDeleteError.open();  
+       },
 
-       _dataChanged: function() {
-           console.log('_dataChanged'); 
-            // this.push('data',{
-          //   $key : "expense4",
-          //   amount : 2000,
-          //   date : "12-12-2016",
-          //   merchant :"official"
-          // });
+       _yesDeleteExpense : function(){ 
+          this.$.query.ref.remove(); 
+          expenseDeleteError.close();  
+          deletedMessage.verticalAlign = "top";  
+          deletedMessage.open();  
+       },
+
+       _dataChanged: function(data) {
+           console.log('_dataChanged ');            
         },
 
         _filtersChanged: function() {
-          console.log('Hi...');            
+           console.log('_filtersChanged '); 
         },
 
-
-        // ready: function() {
-        //   var grid = this.$.expenses;
-
-        //   grid.addEventListener('sort-order-changed', function() {
-        //     if (grid.size > 0) {
-        //       grid.scrollToStart();
-        //       this._update();
-        //     }
-        //   }.bind(this));
-
-        //   grid.addEventListener('selected-items-changed', function() {
-        //     var selection = grid.selection.selected();
-        //     if (selection.length === 1) {
-        //       grid.getItem(selection[0], function(err, item) {
-        //         this.fire('edit-expense', item);
-        //       }.bind(this));
-        //     }
-        //   }.bind(this));
-
-        //   grid.cellClassGenerator = function(cell) {
-        //     if (cell.columnName === 'status') {
-        //       return 'status-' + cell.data.replace(/ /g, '-').toLowerCase();
-        //     } else if (cell.columnName === 'total') {
-        //       return 'total';
-        //     } else if (cell.columnName === 'comment') {
-        //       return 'comment';
-        //     }
-        //   };
-
-        //   grid.then(function() {
-        //     grid.columns[0].renderer = function(cell) {
-        //       cell.element.innerHTML = moment(cell.data).format('MM/DD/YYYY');
-        //     };
-        //     grid.columns[2].renderer = function(cell) {
-        //       cell.element.innerHTML = '$' + cell.data.toFixed(2);
-        //     };
-        //     grid.columns[3].renderer = function(cell) {
-        //       var status = cell.data.replace(/_/g, ' ');
-        //       status = status.charAt(0).toUpperCase() + status.slice(1);
-        //       cell.element.textContent = status;
-        //     };
-
-        //     grid.header.getCell(0, 2).className = 'total';
-        //   });
-        // },
-
-        // _showExpenseEditor: function() {
-        //   this.fire('edit-expense', {});
-        // },
-
-        // _filtersChanged: function() {
-        //   if (this.$.expenses.items) {
-        //     this.debounce('_filtersChanged', function() {
-        //      // this._update();
-        //     }, 300);
-        //   }
-        // },
-
-        // _update: function() {
-        //   if (!this.filters) {
-        //     return;
-        //   }
-        //   var grid = this.$.expenses;
-        //   var merchant = this.filters.merchant;
-        //   var min = this.filters.min;
-        //   var max = this.filters.max;
-        //   var status = this.filters.status;
-        //   var start = this.filters.start;
-        //   var end = this.filters.end;
-        //   var sort;
-        //   var direction;
-        //   if (grid.sortOrder && grid.sortOrder[0]) {
-        //     sort = grid.columns[grid.sortOrder[0].column].name;
-        //     direction = grid.sortOrder[0].direction;
-        //   }
-
-        //   // Filter
-        //   var result = this.expenses
-        //     .filter(function(expense) {
-        //       return !(merchant && expense.merchant
-        //         .toUpperCase().indexOf(merchant.toUpperCase()) < 0);
-        //     })
-        //     .filter(function(expense) {
-        //       return !(min && expense.total < min);
-        //     })
-        //     .filter(function(expense) {
-        //       return !(max && expense.total > max);
-        //     })
-        //     .filter(function(expense) {
-        //       if (status && status.length > 0) {
-        //         return status.indexOf(expense.status) >= 0;
-        //       } else {
-        //         return false;
-        //       }
-        //     })
-        //     .filter(function(expense) {
-        //       if (start) {
-        //         var startDate = moment(start);
-        //         return !!(startDate.isValid() && moment(expense.date).isAfter(startDate));
-        //       } else {
-        //         return true;
-        //       }
-        //     })
-        //     .filter(function(expense) {
-        //       if (end) {
-        //         var endDate = moment(end);
-        //         return !!(endDate.isValid() && moment(expense.date).isBefore(endDate));
-        //       } else {
-        //         return true;
-        //       }
-        //     });
-
-        //   // Sort
-        //   if (sort) {
-        //     var sortProperty = sort;
-        //     var sortDirection = direction || 'desc';
-        //     var datePattern = /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/;
-        //     result.sort(function(a, b) {
-        //       var res;
-        //       if (!isNaN(a[sortProperty])) {
-        //         res = parseInt(a[sortProperty], 10) - parseInt(b[sortProperty], 10);
-        //       } else if (datePattern.test(a[sortProperty])) {
-        //         // Sort dates with moment.js.
-        //         res = moment(a[sortProperty]).isBefore(moment(b[sortProperty])) ? 1 : -1;
-        //       } else {
-        //         // Let's pretend everything that's not a number or date is a string.
-        //         res = a[sortProperty].localeCompare(b[sortProperty]);
-        //       }
-
-        //       if ('desc' === sortDirection) {
-        //         res *= -1;
-        //       }
-        //       return res;
-        //     });
-        //   }
-        //   grid.items = result;
-        // }
       });
     })();
-
-
-        // var t = document.querySelector('#t');      
-        // t.addEventListener('dom-change', function() {
-        //   console.log('dom change...'); 
-        // });
-
 
   </script>
 </dom-module>
