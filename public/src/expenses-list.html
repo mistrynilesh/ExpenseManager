@@ -178,16 +178,16 @@
        _deleteExpense: function(event) { 
            this.expense = event.model.__data__.exp; 
            this.deleteExpenseId = this.expense.$key; 
-           expenseDeleteError.verticalAlign = "top";  
-           expenseDeleteError.duration = 15000;          
-           expenseDeleteError.open();  
+           this.$.expenseDeleteError.verticalAlign = "top";  
+           this.$.expenseDeleteError.duration = 15000;          
+           this.$.expenseDeleteError.open();  
        },
 
        _yesDeleteExpense : function(){ 
           this.$.deleteExpenseQuery.ref.remove();           
-          expenseDeleteError.close();  
-          deletedMessage.verticalAlign = "top";  
-          deletedMessage.open();  
+          this.$.expenseDeleteError.close();  
+          this.$.deletedMessage.verticalAlign = "top";  
+          this.$.deletedMessage.open();  
        },
 
        _dataChanged: function(newData, oldData) {
