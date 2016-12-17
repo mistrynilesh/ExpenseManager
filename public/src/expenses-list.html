@@ -5,11 +5,11 @@
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/iron-icons/editor-icons.html">
 <link rel="import" href="../bower_components/polymerfire/polymerfire.html">
-<link rel="import" href="../bower_components/app-storage/app-indexeddb-mirror/app-indexeddb-mirror.html">
+<!-- <link rel="import" href="../bower_components/app-storage/app-indexeddb-mirror/app-indexeddb-mirror.html"> -->
 <link rel="import" href="moment-js.html">
 
 <dom-module id="expenses-list">
-  <template id="t" is="dom-bind">
+  <template is="dom-bind">
     <style is="custom-style" >
       :host {
         position: relative;
@@ -55,41 +55,13 @@
         }
       }
 
-      #expenses /deep/ thead.vaadin-grid-header {
-        box-shadow: 0 -9px 2px 10px rgba(0, 0, 0, 0.1), 0 -8px 3px 10px rgba(204, 204, 204, 0.20);
-      }
-
-      #expenses /deep/ thead.vaadin-grid-header th {
-        text-transform: uppercase;
-        font-size: 12px;
-        font-weight: 500;
-        color: var(--primary-text-color);
-      }
-
-      #expenses /deep/ .vaadin-grid-header [class*="sort-"]:after {
-        content: "";
-        border-width: 5px;
-        border-style: solid;
-        border-color: transparent;
-        width: 0;
-        padding: 0;
-        min-width: 0;
-        margin: 0 10px;
-      }
-
-      #expenses /deep/ .vaadin-grid-header.vaadin-grid .sort-desc.vaadin-grid:after {
-        border-top-color: var(--accent-color);
-        transform: translateY(25%);
-      }
-
-      #expenses /deep/ .vaadin-grid-header.vaadin-grid .sort-asc.vaadin-grid:after {
-        border-bottom-color: var(--accent-color);
-        transform: translateY(-25%);
-      }
+       paper-button.pink {
+          color: var(--paper-pink-a200);
+        }
 
       paper-card.rate { @apply(--layout-horizontal); }
         .rate-image {
-          width: 100px;
+         /* width: 100px;*/
           height: 170px;
           background: url('./donuts.png');
           background-size: cover;
@@ -111,12 +83,20 @@
 
     </style>
 
- <div id="expenses" style="padding: 25px;" >
+ <div id="expenses" style="padding: 25px;overflow-y: auto;" >
+
+  <firebase-auth
+        id="authExpenseManager"
+        app-name="ExpenseManager"
+        provider=""       
+        user="{{user}}" >
+    </firebase-auth>
 
   <firebase-query
-        id="query"
+        id="deleteExpenseQuery"
         app-name="ExpenseManager"
-        path="/expenses/{{expenseId}}" >
+        path="/expenses/{{deleteExpenseId}}" 
+        data="{{deleteExpense}}" >
   </firebase-query>
 
   <firebase-query
@@ -126,6 +106,8 @@
         data="{{expenselist}}">
   </firebase-query> 
 
+  <!--  <div class="rate-header">[[user.uid]]</div> -->
+
  <!--  <app-indexeddb-mirror
         session="[[user.uid]]"
         key="expenses"
@@ -133,23 +115,24 @@
         persisted-data="{{persistedData}}">
    </app-indexeddb-mirror> -->
 
-  <template is="dom-repeat" items="[[expenselist]]" as="expense" >        
-   <paper-card>
-      <div class="rate-content">
+  <template is="dom-repeat" items="[[expenselist]]" as="exp" >        
+   <paper-card class="rate" >
+      <div class="rate-content">      
         <div class="card-content">
-          <div class="rate-header">[[expense.amount]]</div>
-          <div class="rate-name">[[expense.merchant]]</div>
-          <div>Date : [[expense.date]]</div>
+          <div class="rate-header">₹ [[exp.amount]]</div>
+          <div class="rate-name">[[exp.merchant]]</div>
+          <div>Date : [[exp.date]]</div>
         </div>
         <div class="card-actions"> 
-          <iron-icon icon="icons:delete" on-tap="_deleteExpense" style="cursor:pointer;float: right;color:#F44336" ></iron-icon>   
-          <iron-icon icon="editor:mode-edit" on-tap="_showExpenseEditor" style="cursor:pointer;float: right;color:#2196F3" ></iron-icon>      
-        </div>
-      </div>
-      <div class="rate-image"></div>
+         <!--  <iron-icon icon="icons:delete" on-tap="_deleteExpense" style="cursor:pointer;float: right;color:#F44336" ></iron-icon>   
+          <iron-icon icon="editor:mode-edit" on-tap="_showExpenseEditor" style="cursor:pointer;float: right;color:#2196F3" ></iron-icon>  --> 
+           <paper-button on-tap="_showExpenseEditor" class="pink" >EDIT</paper-button>
+           <paper-button on-tap="_deleteExpense" class="pink" >DELETE</paper-button>    
+        </div> 
+        </div>     
+       <div class="rate-image"></div> 
     </paper-card>
- </template>
-  
+ </template>  
  </div>
     <paper-fab icon="add" on-tap="_showExpenseEditor" id="add-button"></paper-fab>
     <paper-toast id="expenseDeleteError" text="Are you sure want to delete this expense ?" >
@@ -165,7 +148,8 @@
         Polymer({
         is: 'expenses-list',
 
-        properties: {          
+        properties: { 
+          //uid: String,                
           filters: Object,
           expenselist: {
             type: Array,
@@ -173,11 +157,9 @@
             notify: true
           },
           deleteExpense: {
-            type: Object,
-          //  observer: '_dataChanged',
-           // notify: true
+            type: Object
           },
-          expenseId : ''
+          deleteExpenseId : ''
         },   
 
         observers: [        
@@ -185,33 +167,35 @@
         ],
 
       _showExpenseEditor: function(event) {
-        if(event.currentTarget.icon === 'editor:mode-edit'){
-           this.fire('edit-expense', event.model.__data__.expense);
+
+        if(event.currentTarget.textContent.trim() === 'EDIT'){
+           this.fire('edit-expense', event.model.__data__.exp);
         }else{
            this.fire('edit-expense', {});
         }       
        },
 
        _deleteExpense: function(event) { 
-           this.deleteExpense = event.model.__data__.expense;          
-           this.expenseId = this.deleteExpense.$key;               
+           this.expense = event.model.__data__.exp; 
+           this.deleteExpenseId = this.expense.$key; 
            expenseDeleteError.verticalAlign = "top";  
            expenseDeleteError.duration = 15000;          
            expenseDeleteError.open();  
        },
 
        _yesDeleteExpense : function(){ 
-          this.$.query.ref.remove(); 
+          this.$.deleteExpenseQuery.ref.remove();           
           expenseDeleteError.close();  
           deletedMessage.verticalAlign = "top";  
           deletedMessage.open();  
        },
 
-       _dataChanged: function(data) {
+       _dataChanged: function(newData, oldData) {
            console.log('_dataChanged ');            
         },
 
         _filtersChanged: function() {
+           
            console.log('_filtersChanged '); 
         },
 

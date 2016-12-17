@@ -246,11 +246,11 @@
         },
 
         _saveExpense: function(evt) {
-          var expense = evt.detail;          
+          //var expense = evt.detail;          
           this.fire('expenses-updated');
         },
         _deleteExpense: function(evt) {
-          var expense = evt.detail;         
+         // var expense = evt.detail;         
           this.fire('expenses-updated', {
             reason: 'deleted'
           });
