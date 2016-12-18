@@ -1,8 +1,10 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/polymerfire/polymerfire.html">
 <link rel="import" href="login-page.html">
 <dom-module id="expense-app">
   <template>
+
     <style>
       :host {
         display: block;
@@ -92,11 +94,11 @@
         },
 
         ready: function() {
-          // Start downloading and initializing the overview page once the login page has rendered
-          Polymer.RenderStatus.afterNextRender(this.$.login, function() {
-            this.importHref(this.resolveUrl('overview-page.html'),
-              null, null, true);
-          }.bind(this));
+          // Start downloading and initializing the overview page once the login page has rendered                
+            Polymer.RenderStatus.afterNextRender(this.$.login, function() {
+              this.importHref(this.resolveUrl('overview-page.html'),
+                null, null, true);
+            }.bind(this));          
         },
 
         _selectPage: function() {

@@ -171,32 +171,6 @@
         data="{{expense}}">
     </firebase-document>
 
-    <!--  <firebase-storage
-        id="fs2"
-        files="[[file]]"
-        on-error="catchError">
-     </firebase-storage>
- -->
-    <!--  <firebase-document
-        id="expenseDocument1"
-        app-name="ExpenseManager" path="/expenses/{{updateExpenseId}}"        
-        data="{{expense}}">
-    </firebase-document> -->
-
-     <!-- <firebase-auth
-        id="authExpenseManager"
-        app-name="ExpenseManager"
-        provider=""       
-        user="{{user}}" >
-    </firebase-auth> -->
-
-  <!--   <firebase-query
-        id="expenseDocument"
-        app-name="ExpenseManager"
-        path="/expenses/{{updateExpenseId}}"
-        data="{{expense}}" >
-  </firebase-query> -->
-
     <app-route route="{{route}}" pattern="/:action" data="{{routeData}}"></app-route> 
 
     <iron-media-query query="(min-height: 900px)" query-matches="{{tallWindow}}"></iron-media-query>
@@ -224,12 +198,12 @@
           <vaadin-upload id="upload" accept="image/*" max-files="1" on-upload-before="_handleUpload" required>
             <div class="file-list">
               <div class="receipt-wrapper">
-                <img src$="[[_receiptURL]]" alt="Receipt" hidden$="[[!_showReceipt(expense._attachments.*)]]">
+               <!--  <img id="imgReceipt" src$="[[_receiptURL]]" alt="No Receipt Selected" hidden$="[[!_showReceipt(expense._attachments.*)]]"> -->
+                <img id="imgReceipt" src="{{expense.image}}" alt="No Receipt Selected" />
               </div>
             </div>
-          </vaadin-upload>
-          <!--   <input id="file-uploader2" type="file" on-change="onFileUpload2" />
-           <img src$="[[_receiptURL]]" alt="Receipt" hidden$="[[!_showReceipt(expense._attachments.*)]]"> -->
+          </vaadin-upload>  
+            
         </div>
       </div>
       <div class="buttons-layout">
@@ -296,27 +270,29 @@
         },
 
         _showReceipt: function() {
-          return this.expense._id && this.expense.status !== 'new' ||
-            this.expense._attachments && this.expense._attachments.receipt;
+          return this.expense.image;
+          // return this.expense._id && this.expense.status !== 'new' ||
+          //   this.expense._attachments && this.expense._attachments.receipt;
         },
 
         _updateReceiptURL: function() {
-          if (this.expense._attachments && this.expense._attachments.receipt) {
-            if (this.expense._attachments.receipt.data instanceof File ||  
-              this.expense._attachments.receipt.data instanceof Blob) {
-              this._receiptURL = URL.createObjectURL(this.expense._attachments.receipt.data);
-              console.log(this._receiptURL);
-            } else {
-              // this.db.getAttachment(this.expense._id, 'receipt')
-              //   .then(function(blob) {
-              //     this._receiptURL = URL.createObjectURL(blob);
-              //   }.bind(this))
-              //   .catch(function(err) {
-              //     console.log(err);
-              //   });
-            }
-          } else {
-            this._receiptURL = 'images/default-receipt.png';
+          // if (this.expense._attachments && this.expense._attachments.receipt) {
+          //   if (this.expense._attachments.receipt.data instanceof File ||  
+          //     this.expense._attachments.receipt.data instanceof Blob) {
+          //     this._receiptURL = URL.createObjectURL(this.expense._attachments.receipt.data);
+          //     console.log(this._receiptURL);
+          //   } else {
+          //     this.$.imgReceipt.src = this.expense.image;             
+          //   }
+          // }
+
+          if(this.expense.image != ''){
+             this.$.imgReceipt.src = this.expense.image;             
+          }
+           else {
+             this.$.imgReceipt.src = '';
+             this.expense.image = '';
+            //this._receiptURL = 'images/default-receipt.png';
           }
           this.$.dialog.notifyResize();
         },
@@ -340,15 +316,6 @@
             type: arr[1]
           });
         },
-
-        //  catchError: function(e) {
-        //    console.log(e.detail.message);
-        //  },
-
-        // onFileUpload2(e) {
-        //   this.file = e.target.files[0];
-        //   this.$$('#fs2').upload();
-        // },
 
         // Read a file and return a Blob. If it's an image it converts and
         // resizes using a canvas.
@@ -382,7 +349,9 @@
                   callback(this._canvasToBlob(canvas));
                 }
               }.bind(this));
-              img.src = reader.result;
+              //img.src = reader.result;
+              this.$.imgReceipt.src = reader.result;
+              this.expense.image = reader.result;
             }
           }.bind(this);
           reader.readAsDataURL(file);
@@ -391,11 +360,11 @@
         _handleUpload: function(e) {
           var file = e.detail.file;
           this._resizeImage(file, function(data) {
-            this.expense._attachments = this.expense._attachments || {};
-            this.set('expense._attachments.receipt', {
-              type: 'image/jpeg',
-              data: data
-            });
+            // this.expense._attachments = this.expense._attachments || {};
+            // this.set('expense._attachments.receipt', {
+            //   type: 'image/jpeg',
+            //   data: data
+            // });
           }.bind(this), 'image/jpeg', 1000, 1000);
 
           this.$.upload.files = [];
@@ -409,16 +378,15 @@
           if (form.validate()) {
           this.expense.amount = parseFloat(this.expense.amount); 
           if(that.updateExpenseId !== ''){
-              this.$.expenseDocument.save('expenses',  that.updateExpenseId).then(function () { 
+              this.$.expenseDocument.save('expenses', that.updateExpenseId).then(function () { 
                  that.fire('expense-saved', {});      
               });
           }else{              
               this.$.expenseDocument.save('expenses').then(function () {                  
                   that.fire('expense-saved', {});      
-               });
+              });
           }            
-        } else {
-            console.log('Form validation failed');
+        } else {            
             this.$.dialog.scrollTop = 0;
             this.errorText = 'Please fill all required fields';
           }
@@ -429,9 +397,13 @@
           // Create a copy of the expense to be edited so we don't automatically flush changes to db
           this.Texpense = JSON.parse(JSON.stringify(expense));
           // File objects don't survive the JSON dance, so copy that over manually
-          // if (expenseObj._attachments) {
-          //   this.set('expense._attachments', expenseObj._attachments);
-          // }
+          if (expense.image) {
+            //this.set('expense.image', expense.image);
+            this.$.imgReceipt.src = expense.image;
+          }else{
+            //this.set('expense.image', '');
+            this.$.imgReceipt.src = '';
+          }
 
           if(this.Texpense.hasOwnProperty('$key')){
              this.updateExpenseId = this.Texpense.$key; 
@@ -443,9 +415,9 @@
 
           this.$.upload.files = [];
 
-          if (!expense.status) {
-            this.expense.status = 'new';
-          }
+          // if (!expense.status) {
+          //   this.expense.status = 'new';
+          // }
 
           if (expense.total) {
             this.$.total.value = expense.total.toFixed(2);

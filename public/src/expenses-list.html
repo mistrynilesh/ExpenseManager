@@ -2,6 +2,7 @@
 <link rel="import" href="../bower_components/paper-fab/paper-fab.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/iron-icons/editor-icons.html">
 <link rel="import" href="../bower_components/polymerfire/polymerfire.html">
@@ -85,13 +86,6 @@
 
  <div id="expenses" style="padding: 25px;overflow-y: auto;" >
 
-  <firebase-auth
-        id="authExpenseManager"
-        app-name="ExpenseManager"
-        provider=""       
-        user="{{user}}" >
-    </firebase-auth>
-
   <firebase-query
         id="deleteExpenseQuery"
         app-name="ExpenseManager"
@@ -106,7 +100,7 @@
         data="{{expenselist}}">
   </firebase-query> 
 
-  <!--  <div class="rate-header">[[user.uid]]</div> -->
+  <!-- <div class="rate-header">[[user.uid]]</div> -->
 
  <!--  <app-indexeddb-mirror
         session="[[user.uid]]"
@@ -136,8 +130,8 @@
  </div>
     <paper-fab icon="add" on-tap="_showExpenseEditor" id="add-button"></paper-fab>
     <paper-toast id="expenseDeleteError" text="Are you sure want to delete this expense ?" >
-       <paper-button class="red-button" on-tap="_yesDeleteExpense" >Yes</paper-button>
-       <paper-button onclick="expenseDeleteError.toggle()" class="yellow-button">No</paper-button>
+       <paper-button style="color:red;" on-tap="_yesDeleteExpense" >Yes</paper-button>
+       <paper-button onclick="expenseDeleteError.toggle()" style="color:yellow;" >No</paper-button>
     </paper-toast>
      <paper-toast id="deletedMessage" text="Expense was deleted."></paper-toast>
     </div>
@@ -148,8 +142,7 @@
         Polymer({
         is: 'expenses-list',
 
-        properties: { 
-          //uid: String,                
+        properties: {                          
           filters: Object,
           expenselist: {
             type: Array,
@@ -167,12 +160,15 @@
         ],
 
       _showExpenseEditor: function(event) {
-
         if(event.currentTarget.textContent.trim() === 'EDIT'){
            this.fire('edit-expense', event.model.__data__.exp);
         }else{
            this.fire('edit-expense', {});
         }       
+       },
+
+       _noDeleteExpense: function(){
+          this.$.expenseDeleteError.toggle();
        },
 
        _deleteExpense: function(event) { 
@@ -194,8 +190,7 @@
            console.log('_dataChanged ');            
         },
 
-        _filtersChanged: function() {
-           
+        _filtersChanged: function() {           
            console.log('_filtersChanged '); 
         },
 
