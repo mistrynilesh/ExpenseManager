@@ -185,7 +185,7 @@
         <div class="form">
           <form is="iron-form" id="form">
             <iron-a11y-keys keys="enter" on-keys-pressed="_save"></iron-a11y-keys>
-            <vaadin-combo-box name="merchant" id="merchant" items="[[merchants]]" value="{{expense.merchant}}" label="Type" allow-custom-value required></vaadin-combo-box>
+            <vaadin-combo-box name="expType" id="expType" items="[[expTypes]]" value="{{expense.expType}}" label="Type" allow-custom-value required></vaadin-combo-box>
             <paper-input name="amount" id="amount" value="{{expense.amount}}" type="number" max="10000" label="Amount" required step="any">
               <div prefix>₹</div>
             </paper-input>
@@ -223,9 +223,9 @@
         is: 'expense-editor',
 
         properties: {       
-          merchants: Array,
+          expTypes: Array,
           expense: {
-            type: Object
+            type : Object
           },
           updateExpenseId : '',
           caption: {
@@ -242,6 +242,7 @@
         ready: function() {
           this.$.upload.set('i18n.dropFiles.one', 'Drop receipt here...');
           this.$.upload.set('i18n.addFiles.one', 'Select receipt');
+          this.expTypes = ['Official', 'Traveling', 'Other'];
         },
 
         attached: function() {
@@ -407,11 +408,13 @@
 
           if(this.Texpense.hasOwnProperty('$key')){
              this.updateExpenseId = this.Texpense.$key; 
-             delete this.Texpense['$key'];         
-          }else{
-             this.updateExpenseId = '';
+             delete this.Texpense['$key']; 
+             this.expense = this.Texpense;        
           }
-          this.expense = this.Texpense;
+          // else{
+          //    this.updateExpenseId = '';
+          // }
+         
 
           this.$.upload.files = [];
 
@@ -426,25 +429,22 @@
          // this.$.delete.hidden = !(this.expense._id && this.expense.status === 'new');
 
           // Ensure that the scroll is returned to top on mobile
-          this.async(function() {
+          //this.async(function() {
             this.$.dialog.scrollTop = 0;
-          });
+          //});
 
           this.set('route.path', '/edit');
         },
 
         close: function() {
-          var _this = this;
+         // var _this = this;
           this.async(function() {
             // Prevent tap from leaking through to underlying page
-            _this.set('route.path', '');
-            //_this.expense = {};
+            this.set('route.path', '');
+           // _this.expense = {};
           }, 100);
         },
 
-        _delete: function() {
-          this.fire('delete-expense', this.updateExpense);
-        }
       });
     })();
   </script>

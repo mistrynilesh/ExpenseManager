@@ -10,7 +10,7 @@
 <link rel="import" href="moment-js.html">
 
 <dom-module id="expenses-list">
-  <template is="dom-bind">
+  <template>
     <style is="custom-style" >
       :host {
         position: relative;
@@ -45,13 +45,13 @@
         }
       }
 
-      #expenses {
+      #dv-expenses {
         flex: 1;
         color: var(--primary-text-color);
       }
 
       @media (max-width: 1124px) {
-        #expenses {
+        #dv-expenses {
           font-size: 15px;
         }
       }
@@ -78,13 +78,13 @@
           --iron-icon-stroke-color: var(--paper-grey-600);
         }
 
-        #expenses paper-card{
+        #dv-expenses paper-card{
           margin-bottom: 25px;
         }
 
     </style>
 
- <div id="expenses" style="padding: 25px;overflow-y: auto;" >
+ <div id="dv-expenses" style="padding: 25px;overflow-y: auto;" >
 
   <firebase-query
         id="deleteExpenseQuery"
@@ -95,31 +95,20 @@
 
   <firebase-query
         id="expenseQuery"
-        app-name="ExpenseManager"
-        path="/expenses"
-        data="{{expenselist}}">
+        app-name="ExpenseManager" 
+        path="/expenses" 
+        data={{expenselist}} >
   </firebase-query> 
 
-  <!-- <div class="rate-header">[[user.uid]]</div> -->
-
- <!--  <app-indexeddb-mirror
-        session="[[user.uid]]"
-        key="expenses"
-        data="{{data}}"
-        persisted-data="{{persistedData}}">
-   </app-indexeddb-mirror> -->
-
-  <template is="dom-repeat" items="[[expenselist]]" as="exp" >        
+  <template is="dom-repeat" items="[[expenselist]]" as="expObj" >        
    <paper-card class="rate" >
       <div class="rate-content">      
         <div class="card-content">
-          <div class="rate-header">₹ [[exp.amount]]</div>
-          <div class="rate-name">[[exp.merchant]]</div>
-          <div>Date : [[exp.date]]</div>
+          <div class="rate-header">₹ [[expObj.amount]]</div>
+          <div class="rate-name">[[expObj.expType]]</div>
+          <div>Date : [[expObj.date]]</div>
         </div>
-        <div class="card-actions"> 
-         <!--  <iron-icon icon="icons:delete" on-tap="_deleteExpense" style="cursor:pointer;float: right;color:#F44336" ></iron-icon>   
-          <iron-icon icon="editor:mode-edit" on-tap="_showExpenseEditor" style="cursor:pointer;float: right;color:#2196F3" ></iron-icon>  --> 
+        <div class="card-actions">         
            <paper-button on-tap="_showExpenseEditor" class="pink" >EDIT</paper-button>
            <paper-button on-tap="_deleteExpense" class="pink" >DELETE</paper-button>    
         </div> 
@@ -146,22 +135,26 @@
           filters: Object,
           expenselist: {
             type: Array,
-            observer: '_dataChanged',
-            notify: true
+            observer: '_dataChanged'
+            //notify: true
           },
           deleteExpense: {
             type: Object
           },
           deleteExpenseId : ''
-        },   
+        }, 
 
-        observers: [        
-          '_filtersChanged(filters.*)'        
-        ],
+        // observers: [        
+        //   '_filtersChanged(filters.*)'        
+        // ],
+
+        _trasactionCompleteChanged : function(){
+          console.log('_trasactionCompleteChanged');
+        },
 
       _showExpenseEditor: function(event) {
         if(event.currentTarget.textContent.trim() === 'EDIT'){
-           this.fire('edit-expense', event.model.__data__.exp);
+           this.fire('edit-expense', event.model.__data__.expObj);
         }else{
            this.fire('edit-expense', {});
         }       
@@ -172,8 +165,8 @@
        },
 
        _deleteExpense: function(event) { 
-           this.expense = event.model.__data__.exp; 
-           this.deleteExpenseId = this.expense.$key; 
+           this.delExpense = event.model.__data__.expObj; 
+           this.deleteExpenseId = this.delExpense.$key; 
            this.$.expenseDeleteError.verticalAlign = "top";  
            this.$.expenseDeleteError.duration = 15000;          
            this.$.expenseDeleteError.open();  
@@ -183,15 +176,50 @@
           this.$.deleteExpenseQuery.ref.remove();           
           this.$.expenseDeleteError.close();  
           this.$.deletedMessage.verticalAlign = "top";  
-          this.$.deletedMessage.open();  
+          this.$.deletedMessage.open();          
        },
 
-       _dataChanged: function(newData, oldData) {
-           console.log('_dataChanged ');            
-        },
+      _dataChanged: function(oldData, newData) {
+           console.log('_dataChanged '); 
+       },
 
-        _filtersChanged: function() {           
-           console.log('_filtersChanged '); 
+      _filtersChanged: function() {
+           console.log('_filtersChanged ');           
+           var refExp = this.$.expenseQuery.ref;            
+           var that = this; 
+           var fullQuery = null;                  
+           if(this.filters.expType !== ''){ 
+              this.expenselist = [];             
+              fullQuery = refExp.orderByChild('expType').equalTo(that.filters.expType);    
+           } 
+
+           if(this.filters.min !== '' && this.filters.max !== ''){ 
+              this.expenselist = [];             
+              fullQuery = refExp.orderByChild('amount').startAt(parseInt(that.filters.min))
+                                                       .endAt(parseInt(that.filters.max));    
+           } 
+
+           if(this.filters.start !== '' && this.filters.end !== ''){ 
+              this.expenselist = [];             
+              fullQuery = refExp.orderByChild('date').startAt(that.filters.start)
+                                                     .endAt(that.filters.end);    
+           } 
+
+          if(this.filters.expType === '' && 
+            (this.filters.min === '' && this.filters.max === '') &&           
+            (this.filters.start === '' && this.filters.end === ''))
+            {  
+              this.expenselist = [];                   
+              fullQuery = refExp.orderByChild('amount');
+            }
+
+           if(this.filters.isReady != true && fullQuery !== null){
+              fullQuery.on("child_added", function(expObj) {
+                  var tempExpense = expObj.val();
+                  tempExpense["$key"] = expObj.key;               
+                  that.push('expenselist', tempExpense);                  
+             }); 
+           }  
         },
 
       });

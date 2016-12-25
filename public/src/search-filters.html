@@ -105,9 +105,9 @@
 
         <div class="row">
           <div class="date col">
-            <vaadin-date-picker id="from" auto-validate label="From" value="{{filters.start}}"></vaadin-date-picker>
+            <vaadin-date-picker id="from" label="From" value="{{filters.start}}"></vaadin-date-picker>
             <span>–</span>
-            <vaadin-date-picker id="to" auto-validate label="To" value="{{filters.end}}"></vaadin-date-picker>
+            <vaadin-date-picker id="to" label="To" value="{{filters.end}}"></vaadin-date-picker>
           </div>
         </div>
 
@@ -122,8 +122,8 @@
         </div>
 
         <div class="row">
-          <div class="merchants col">
-            <vaadin-combo-box label="Type" items="{{merchants}}" value="{{filters.merchant}}" id="merchantsSelect"></vaadin-combo-box>
+          <div class="types col">
+            <vaadin-combo-box label="Type" items="{{expTypes}}" value="{{filters.expType}}" id="typesSelect"></vaadin-combo-box>
           </div>
         </div>
 
@@ -157,24 +157,20 @@
             type: Object,
             notify: true
           },
-          merchants: {
+          expTypes: {
             type: Array,
-            observer: '_merchantsChanged'
-          },
-          statusOptions: Array
+            observer: '_typesChanged'
+          }
         },
 
         ready: function() {
           this._registerValidators();
-          this.merchants = ['official', 'traveling', 'demo'];
-          // Select all status options by default.
-          this.statusOptions.forEach(function(status) {
-            this._addStatus(status.name);
-          }.bind(this));
+          this.expTypes = ['Official', 'Traveling', 'Other'];
+          this.filters.min = '';
+          this.filters.max = '';          
         },
 
-        _registerValidators: function() {
-          // Define validators for from/to fields.
+        _registerValidators: function() {         
           new Polymer.IronMeta({
             type: 'validator',
             key: 'from-validator',
@@ -203,39 +199,12 @@
             moment(this.$.from.value, 'YYYY-MM-DD').isBefore(moment(to, 'YYYY-MM-DD'));
         },
 
-        _merchantsChanged: function(merchants) {
-          this.$.merchantsSelect.items = merchants;
+        _typesChanged: function(types) {
+          this.$.typesSelect.items = types;
         },
 
-        _updateStatus: function(evt) {
-          var checkbox = evt.target;
-
-          if (checkbox.checked) {
-            this._addStatus(checkbox.name);
-          } else {
-            this._removeStatus(checkbox.name);
-          }
-        },
-
-        _addStatus: function(status) {
-          var statuses = this.filters.status;
-          if (statuses && statuses.indexOf(status) < 0) {
-            this.push('filters.status', status);
-          } else {
-            this.set('filters.status', [status]);
-          }
-        },
-
-        _removeStatus: function(status) {
-          var statusIndex = this.filters.status.indexOf(status);
-          if (this.filters.status && statusIndex >= 0) {
-            this.splice('filters.status', statusIndex, 1);
-          }
-        },
-
-        _filtersContain: function(name, filters) {
-          return filters && filters.base.status && filters.base.status.indexOf(name) >= 0;
-        }
+        
+        
       });
     })();
   </script>

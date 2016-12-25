@@ -127,15 +127,14 @@
       </paper-toolbar>
 
       <div class="content">
-        <filters-toolbar id="filters-toolbar" total-owed="[[totalOwed]]" merchants="[[merchants]]" filters="{{filters}}" expenses="[[expenses]]"></filters-toolbar>
+        <filters-toolbar id="filters-toolbar" total-owed="[[totalOwed]]" types="[[types]]" filters="{{filters}}" expenses="[[expenses]]"></filters-toolbar>
         <content-panel id="content-panel" filters="{{filters}}" total-owed="[[totalOwed]]" expenses="[[expenses]]"></content-panel>
       </div>
 
     </paper-header-panel>
 
-    <expense-editor id="expenseEditor" merchants="[[merchants]]" db="[[_db]]" route="{{subroute}}"></expense-editor>
+    <expense-editor id="expenseEditor" types="[[types]]" db="[[_db]]" route="{{subroute}}"></expense-editor>
     <paper-toast id="saveNotification"></paper-toast>
-  <!--   <info-dialog id="info"></info-dialog>   -->  
   </template>
 
   <script>
@@ -160,7 +159,7 @@
           status: String,
           expenses: Array,
           totalOwed: Number,
-          merchants: Array,
+          types: Array,
           attachments: Object,
           filters: {
             type: Object,
@@ -168,10 +167,9 @@
               return {
                 start: '',
                 end: '',
-                merchant: ''
+                expType: ''
               };
             },
-
             notify: true
           }
         },
@@ -185,7 +183,7 @@
 
         observers: [
           '_showInfoDialog(loggedIn, _showInfo)',
-          '_getUniqueMerchants(expenses.*)',
+          '_getUniquetypes(expenses.*)',
           '_calculateTotal(expenses.*)',
           '_route(route)'
         ],
@@ -224,10 +222,10 @@
           this.$.info.open();
         },
 
-        _getUniqueMerchants: function() {
+        _getUniquetypes: function() {
           if (this.expenses) {
-            this.merchants = this.expenses.map(function(e) {
-              return e.merchant;
+            this.types = this.expenses.map(function(e) {
+              return e.type;
             }).filter(function(val, index, self) {
               return self.indexOf(val) === index;
             });
@@ -262,7 +260,7 @@
             this.$.saveNotification.text = 'Expense was deleted';
           } else {
             this.$.saveNotification.text = 'Expense was saved';
-          }
+          }          
           this.$.saveNotification.show();
         },
 

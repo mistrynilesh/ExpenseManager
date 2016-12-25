@@ -94,15 +94,17 @@
         },
 
         ready: function() {
-          // Start downloading and initializing the overview page once the login page has rendered                
-            Polymer.RenderStatus.afterNextRender(this.$.login, function() {
-              this.importHref(this.resolveUrl('overview-page.html'),
-                null, null, true);
-            }.bind(this));          
+                  
         },
 
         _selectPage: function() {
           this.selected = this.loggedIn ? 1 : 0;
+          if(this.selected == 1){
+            Polymer.RenderStatus.afterNextRender(this.$.login, function() {
+                this.importHref(this.resolveUrl('overview-page.html'),
+                  null, null, true);
+              }.bind(this));
+          }
         }
       });
     })();
