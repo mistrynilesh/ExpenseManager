@@ -6,7 +6,6 @@
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/iron-icons/editor-icons.html">
 <link rel="import" href="../bower_components/polymerfire/polymerfire.html">
-<!-- <link rel="import" href="../bower_components/app-storage/app-indexeddb-mirror/app-indexeddb-mirror.html"> -->
 <link rel="import" href="moment-js.html">
 
 <dom-module id="expenses-list">
@@ -19,11 +18,78 @@
         background: #fff;
       }
 
+      .col {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .col.total,
+      .col.date {
+        display: flex;
+        align-items: flex-end;
+      }
+
+      .col span:not(.caption) {
+        padding: 0 4px 12px;
+        color: rgba(0, 0, 0, 0.3);
+      }
+
+      .date span:not(.caption) {
+        padding: 0 4px 4px;
+      }
+
+      .date vaadin-date-picker {
+        display: block;
+        flex: 1;
+      }
+
+    /*  .col.total div[prefix] {
+        margin-right: 6px;
+      }
+
+      .col.total paper-input {
+        flex: 1;
+      }*/
+
+      .row {
+        margin-bottom: 16px;
+      }
+
+   /*   .filters {
+        padding: 25px;
+        z-index: 10;
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+      }*/
+
+       #filters {
+          background: #f8f9f9;          
+          overflow: auto;
+          box-shadow: rgba(0, 0, 0, 0.2) 0px -10px 6px -10px inset;         
+          padding: 25px;
+        }
+
+      #mobfilters{
+         display:none;
+         background: #f8f9f9;          
+         overflow: auto;
+         box-shadow: rgba(0, 0, 0, 0.2) 0px -10px 6px -10px inset;         
+         padding: 25px;
+      }
+
       #add-button {
         position: fixed;
         right: 32px;
         bottom: 32px;
         z-index: 2;
+      }
+     
+       #filter-button {
+        position: fixed;
+        right: 32px;
+        bottom: 102px;
+        z-index: 2;
+        background: #FFD600;
+        display: none;
       }
 
       @media (max-width: 1124px) {
@@ -42,6 +108,10 @@
       @media (max-width: 900px) {
         #add-button {
           bottom: 32px;
+        }
+
+        #filter-button {
+          display: block;
         }
       }
 
@@ -82,11 +152,24 @@
           margin-bottom: 25px;
         }
 
+        #clear-button {
+         color: var(--primary-color);
+         margin-bottom: -10px;
+      }
+
+       @media (max-width: 900px) {
+             #mob-filters{
+              
+             }
+
+            #filters{
+              display: none;
+             }
+      }
+
     </style>
 
- <div id="dv-expenses" style="padding: 25px;overflow-y: auto;" >
-
-  <firebase-query
+   <firebase-query
         id="deleteExpenseQuery"
         app-name="ExpenseManager"
         path="/expenses/{{deleteExpenseId}}" 
@@ -100,6 +183,39 @@
         data={{expenselist}} >
   </firebase-query> 
 
+ <div id="filters" >
+    <div class="row">
+      <div class="date col">
+        <iron-icon icon="icons:filter-list" style="margin-right: 10px;" ></iron-icon>
+        <vaadin-combo-box label="Type" items='["Official", "Traveling", "Other"]' value="{{filters.expenseType}}" id="typesSelect" on-change="_filtersChanged" style="padding:0px;margin-right: 15px;" ></vaadin-combo-box>
+
+        <vaadin-date-picker id="from" label="From" value="{{filters.start}}" on-value-changed="valueChanged" ></vaadin-date-picker>
+        <span>–</span>
+        <vaadin-date-picker id="to" label="To" value="{{filters.end}}" on-value-changed="valueChanged" ></vaadin-date-picker>
+        <paper-button id="clear-button" on-tap="_clearFilters">Clear Filters</paper-button>
+      </div>
+    </div>
+</div>
+
+<div id="mobfilters"  >
+    <div class="row">
+      <div class="date col">
+        <iron-icon icon="icons:filter-list" style="margin-right: 10px;" ></iron-icon>
+        <vaadin-combo-box label="Type" items='["Official", "Traveling", "Other"]' value="{{filters.expenseType}}" id="typesSelect" on-change="_filtersChanged" style="padding:0px;margin-right: 15px;width:100%;" ></vaadin-combo-box>
+        <paper-button id="clear-button" on-tap="_clearFilters">Clear</paper-button>      
+      </div>
+
+     <div class="row">
+      <div class="date col">   
+        <vaadin-date-picker id="from" label="From" value="{{filters.start}}" on-value-changed="valueChanged" ></vaadin-date-picker>
+        <span>–</span>
+        <vaadin-date-picker id="to" label="To" value="{{filters.end}}" on-value-changed="valueChanged" ></vaadin-date-picker>
+      </div>
+     </div> 
+    </div>
+</div>
+
+ <div id="dv-expenses" style="padding: 25px;overflow-y: auto;" >
   <template is="dom-repeat" items="[[expenselist]]" as="expObj" >        
    <paper-card class="rate" >
       <div class="rate-content">      
@@ -117,6 +233,7 @@
     </paper-card>
  </template>  
  </div>
+    <paper-fab icon="filter-list" on-tap="_toggleFilter" id="filter-button" ></paper-fab>
     <paper-fab icon="add" on-tap="_showExpenseEditor" id="add-button"></paper-fab>
     <paper-toast id="expenseDeleteError" text="Are you sure want to delete this expense ?" >
        <paper-button style="color:red;" on-tap="_yesDeleteExpense" >Yes</paper-button>
@@ -131,25 +248,41 @@
         Polymer({
         is: 'expenses-list',
 
-        properties: {                          
-          filters: Object,
+        properties: {  
           expenselist: {
-            type: Array,
-            observer: '_dataChanged'
-            //notify: true
+            type: Array                
           },
           deleteExpense: {
             type: Object
           },
           deleteExpenseId : ''
         }, 
+        filters: {
+            type: Object            
+        },
+ 
+        valueChanged: function() {
+          console.log('got _value-changed_ event');         
+          if(this.$.from.value !== ''){
+             this.filters.start = this.$.from.value;
+          }  
+          if(this.$.to.value !== ''){
+             this.filters.end = this.$.to.value;
+          }
+          this._filtersChanged();
+        },     
 
-        // observers: [        
-        //   '_filtersChanged(filters.*)'        
-        // ],
+        ready : function(){
+                 
+        },
 
-        _trasactionCompleteChanged : function(){
-          console.log('_trasactionCompleteChanged');
+        _toggleFilter : function(){
+           var mobileFilterVisibility = this.$.mobfilters.style.display;
+           if(mobileFilterVisibility === '' || mobileFilterVisibility === 'none'){
+              this.$.mobfilters.style.display = 'block';
+           }else{
+               this.$.mobfilters.style.display = 'none';
+           }         
         },
 
       _showExpenseEditor: function(event) {
@@ -183,46 +316,78 @@
            console.log('_dataChanged '); 
        },
 
+       _clearFilters: function() {
+        this.set('filters.start', '');
+        this.set('filters.end', '');
+        this.set('filters.min', '');
+        this.set('filters.max', '');
+        this.set('filters.expenseType', ''); 
+        this._filtersChanged();
+      },
+
       _filtersChanged: function() {
-           console.log('_filtersChanged ');           
-           var refExp = this.$.expenseQuery.ref;            
+           console.log('_filtersChanged');           
+           var refExp = this.$.expenseQuery.ref; 
+           this.$.expenseQuery.reset();           
            var that = this; 
-           var fullQuery = null;                  
-           if(this.filters.expType !== ''){ 
-              this.expenselist = [];             
-              fullQuery = refExp.orderByChild('expType').equalTo(that.filters.expType);    
-           } 
+           var fullQuery = null; 
 
-           if(this.filters.min !== '' && this.filters.max !== ''){ 
-              this.expenselist = [];             
-              fullQuery = refExp.orderByChild('amount').startAt(parseInt(that.filters.min))
-                                                       .endAt(parseInt(that.filters.max));    
-           } 
+           if(this.filters !== undefined){ 
+             if(this.filters.expenseType !== '' && this.filters.start !== '' && this.filters.end !== ''){  
+                this.expenselist = [];                 
+                fullQuery = refExp.orderByChild('expType').equalTo(that.filters.expenseType)
+                .on('child_added', function(snapshot) { 
+                      var tempExpense = snapshot.val();
+                      tempExpense["$key"] = snapshot.key; 
 
-           if(this.filters.start !== '' && this.filters.end !== ''){ 
-              this.expenselist = [];             
-              fullQuery = refExp.orderByChild('date').startAt(that.filters.start)
-                                                     .endAt(that.filters.end);    
-           } 
+                      if(that._checkKeyAvailable(snapshot.key)){               
+                         that.push('expenselist', tempExpense);
+                      } 
+                });
+             } else{
 
-          if(this.filters.expType === '' && 
-            (this.filters.min === '' && this.filters.max === '') &&           
-            (this.filters.start === '' && this.filters.end === ''))
-            {  
-              this.expenselist = [];                   
-              fullQuery = refExp.orderByChild('amount');
-            }
+              if(this.filters.expenseType !== ''){                   
+                  fullQuery = refExp.orderByChild('expType').equalTo(that.filters.expenseType);    
+               } 
 
-           if(this.filters.isReady != true && fullQuery !== null){
-              fullQuery.on("child_added", function(expObj) {
-                  var tempExpense = expObj.val();
-                  tempExpense["$key"] = expObj.key;               
-                  that.push('expenselist', tempExpense);                  
-             }); 
-           }  
+               if(this.filters.start !== '' && this.filters.end !== ''){                  
+                  fullQuery = refExp.orderByChild('date').startAt(that.filters.start)
+                                                         .endAt(that.filters.end);    
+               }
+
+               if(this.filters.expenseType === '' &&
+                 (this.filters.start === '' && this.filters.end === ''))
+                {                   
+                  fullQuery = refExp.orderByChild('amount'); 
+                }
+
+                if(fullQuery !== null){
+                  this.expenselist = []; 
+                  fullQuery.on("child_added", function(snapshot) {                                         
+                      var tempExpense = snapshot.val();
+                      tempExpense["$key"] = snapshot.key; 
+
+                      if(that._checkKeyAvailable(snapshot.key)){               
+                         that.push('expenselist', tempExpense);
+                      }
+                 }); 
+               }  
+             }            
+           }
         },
+     
+       _checkKeyAvailable : function(key){
+          var that = this;
+          for(var cnt = 0; cnt < that.expenselist.length; cnt++){
+              if(that.expenselist[cnt].$key === key){
+                return false;
+              }
+          }
+          return true;
+       },     
 
       });
+
     })();
 
   </script>

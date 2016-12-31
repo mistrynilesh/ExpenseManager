@@ -126,18 +126,6 @@
             <vaadin-combo-box label="Type" items="{{expTypes}}" value="{{filters.expType}}" id="typesSelect"></vaadin-combo-box>
           </div>
         </div>
-
-       <!--  <div class="row">
-          <div class="status col">
-            <span class="caption">Status</span>
-            <div class="checkboxes">
-              <template is="dom-repeat" items="[[statusOptions]]">
-                <paper-checkbox on-change="_updateStatus" checked="[[_filtersContain(item.name, filters.*)]]" name$="[[item.name]]">[[item.label]]</paper-checkbox>
-              </template>
-            </div>
-          </div>
-        </div> -->
-
       </div>
     </div>
     <div id="footer">
@@ -165,9 +153,7 @@
 
         ready: function() {
           this._registerValidators();
-          this.expTypes = ['Official', 'Traveling', 'Other'];
-          this.filters.min = '';
-          this.filters.max = '';          
+          this.expTypes = ['Official', 'Traveling', 'Other'];                 
         },
 
         _registerValidators: function() {         
